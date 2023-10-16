@@ -23,7 +23,6 @@ info:
   x-unofficialSpec: true
 externalDocs:
   url: 'https://xkcd.com/json.html'
-securityDefinitions: {}
 paths:
   /info.0.json:
     get:

@@ -139,9 +139,44 @@ function filter(obj,options) {
         if (options.servers && !filtered.servers && Array.isArray(src.servers)) {
             filtered.servers = src.servers;
         }
+        const activeSecuritySchemes= 
+        (src.paths?Object.keys(src.paths):[])
+            .flatMap(pathUrl =>src.paths[pathUrl])
+            .flatMap(pathElement => Object.keys(pathElement)
+            .flatMap(method =>pathElement[method]))
+            .filter(path => Object.keys(path).filter(value => options.flags.includes(value)))
+            .flatMap(path =>{
+                if (!filtered.security && Array.isArray(path.security)) {
+                    return path.security.flatMap(securityItem => Object.keys(securityItem));
+                }else{
+                    return [];
+                }
+            })
+            .filter(filterUnique)
+
+        // OAS2
+        if (src.securityDefinitions) {
+            filtered.securityDefinitions = schemesToSecurityDefinitions(src, activeSecuritySchemes);
+        }
+        // OAS3
+        if (src.securityDefinitions && src.components && src.components.securitySchemes) {
+            if(!filtered.components){
+                filtered.components ={};
+            }
+            filtered.components.securitySchemes = schemesToSecurityDefinitions(src, activeSecuritySchemes);
+        }
     }
     return (options.inverse ? filtered : src);
 }
+
+function schemesToSecurityDefinitions(src, activeSecuritySchemes) {
+    return Object.fromEntries(Object.entries(src.securityDefinitions)
+        .filter(([key]) => activeSecuritySchemes.includes(key))??[]);
+}
+
+function filterUnique(value, index, array) {
+    return array.indexOf(value) === index;
+  }
 
 module.exports = {
     filter : filter
